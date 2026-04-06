@@ -1,52 +1,154 @@
 from __future__ import annotations
 
+import json
 import logging
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 
+from toolsmithbench.envs.stl_env import STLEnvironment
 from toolsmithbench.task import TaskSpec
 
 logger = logging.getLogger(__name__)
+
+_LOGS_DIR = Path(__file__).parent.parent / "logs"
+_MAX_STEPS = 20
+
+# Actions that count as a tool-library lookup for trace annotation.
+_LIBRARY_LOOKUP_ACTIONS = {"tool_library_search", "tool_library_lookup"}
 
 
 class Runner:
     """Main agent execution loop.
 
-    Responsibilities (full implementation):
-    - Load a task by ID from the registry
-    - Initialize the correct environment for that task
-    - Feed the agent the task instructions
-    - Route agent actions through the environment
-    - Append structured events to the trace log on each step
-    - Detect when the agent signals completion
-    - Hand off to the verifier with the agent's output and full trace
+    Feeds observations to an agent, routes its actions through the STL
+    environment, records a structured trace, and writes it to disk.
 
-    The runner does NOT score anything — it never sees ground truth.
+    Does NOT score anything — the verifier is called by the harness after
+    ``run()`` returns.
+
+    Agent interface::
+
+        class Agent:
+            def step(self, observation: dict) -> tuple[str, dict]:
+                ...  # returns (action, args)
     """
 
-    def run(self, task: TaskSpec, agent) -> None:
-        """Execute a single task with the given agent.
+    def run(self, task: TaskSpec, agent) -> tuple[list[dict], Path]:
+        """Execute *task* with *agent*.
 
-        Args:
-            task:  A TaskSpec describing the benchmark task.
-            agent: An agent object (interface TBD in later implementation).
+        Returns:
+            trace:       List of structured trace events (one per step).
+            working_dir: Path to the environment's working directory,
+                         ready for the verifier to inspect.
         """
-        start_ts = datetime.now(timezone.utc).isoformat()
-        logger.info(
-            "Runner.run START  task_id=%r  agent=%r  ts=%s",
-            task.task_id,
-            repr(agent),
-            start_ts,
-        )
+        working_dir = Path(tempfile.mkdtemp(prefix=f"tsb_{task.task_id}_"))
+        env = STLEnvironment(working_dir)
+        trace: list[dict] = []
 
-        # TODO: initialize environment for task.family
-        # TODO: feed agent task.instructions and task.allowed_actions
-        # TODO: step loop — route actions, append trace events, detect completion
-        # TODO: hand off trace + working directory to verifier
+        logger.info("run START  task_id=%r  working_dir=%s", task.task_id, working_dir)
 
-        end_ts = datetime.now(timezone.utc).isoformat()
-        logger.info(
-            "Runner.run END    task_id=%r  agent=%r  ts=%s",
-            task.task_id,
-            repr(agent),
-            end_ts,
-        )
+        observation: dict = {
+            "task_id": task.task_id,
+            "instructions": task.instructions,
+            "allowed_actions": task.allowed_actions,
+            "files": env.list_files(),
+            "last_action_result": None,
+        }
+
+        for step in range(1, _MAX_STEPS + 1):
+            action, args = agent.step(observation)
+            timestamp = datetime.now(timezone.utc).isoformat()
+
+            if action == "done":
+                event = _make_event(step, task.task_id, action, args, "ok", False, timestamp)
+                trace.append(event)
+                logger.info("step %d  action=done — agent signalled completion", step)
+                break
+
+            result, is_library_lookup = _dispatch(env, action, args)
+
+            event = _make_event(
+                step, task.task_id, action, args, result, is_library_lookup, timestamp
+            )
+            trace.append(event)
+            logger.info("step %d  action=%r  result=%r", step, action, result)
+
+            observation = {
+                "task_id": task.task_id,
+                "instructions": task.instructions,
+                "allowed_actions": task.allowed_actions,
+                "files": env.list_files(),
+                "last_action_result": result,
+            }
+        else:
+            logger.warning("run STOPPED — reached max steps (%d)", _MAX_STEPS)
+
+        _write_trace(trace, task.task_id)
+        logger.info("run END  task_id=%r  steps=%d", task.task_id, len(trace))
+        return trace, working_dir
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _dispatch(env: STLEnvironment, action: str, args: dict) -> tuple[object, bool]:
+    """Route *action* to the correct environment method.
+
+    Returns ``(result, is_library_lookup)`` where *result* is whatever the
+    environment method returns and *is_library_lookup* flags whether the action
+    was a tool-library query.
+    """
+    is_library_lookup = action in _LIBRARY_LOOKUP_ACTIONS
+    try:
+        if action == "read_file":
+            result = env.read_file(args["path"])
+        elif action == "write_file":
+            env.write_file(args["path"], args["content"])
+            result = "ok"
+        elif action == "run_python":
+            result = env.run_python(args["path"])
+        elif action == "list_files":
+            result = env.list_files()
+        elif action in _LIBRARY_LOOKUP_ACTIONS:
+            # Tool-library actions are not routed through the environment —
+            # they are handled by the harness layer (not yet implemented).
+            result = {"error": f"action {action!r} not yet wired to ToolLibrary"}
+        else:
+            result = {"error": f"unknown action {action!r}"}
+    except Exception as exc:  # noqa: BLE001
+        result = {"error": str(exc)}
+
+    return result, is_library_lookup
+
+
+def _make_event(
+    step: int,
+    task_id: str,
+    action: str,
+    args: dict,
+    result: object,
+    tool_library_lookup: bool,
+    timestamp: str,
+) -> dict:
+    return {
+        "step": step,
+        "task_id": task_id,
+        "action": action,
+        "args": args,
+        "result": result,
+        "tool_library_lookup": tool_library_lookup,
+        "timestamp": timestamp,
+    }
+
+
+def _write_trace(trace: list[dict], task_id: str) -> Path:
+    _LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    log_path = _LOGS_DIR / f"{task_id}_{ts}.jsonl"
+    with log_path.open("w", encoding="utf-8") as fh:
+        for event in trace:
+            fh.write(json.dumps(event) + "\n")
+    logger.info("trace written to %s", log_path)
+    return log_path
