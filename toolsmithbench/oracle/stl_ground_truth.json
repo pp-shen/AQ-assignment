@@ -1,0 +1,24 @@
+{
+  "description": "Ground truth validity labels for STL fixture files used in verifier scoring.",
+  "fixtures_dir": "fixtures",
+  "normal_check_required": true,
+  "cases": [
+    {
+      "file": "good_mesh.stl",
+      "valid": true,
+      "notes": "Clean tetrahedron — all four face normals match vertex winding order, closed mesh."
+    },
+    {
+      "file": "bad_normals.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Faces 3 and 4 have declared normals opposite to their vertex winding order. Invalid for manufacturing. A naive validator that does not check normal consistency will incorrectly report this as valid."
+    },
+    {
+      "file": "missing_faces.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Missing the hypotenuse face — leaves 3 open boundary edges. Not a closed solid."
+    }
+  ]
+}

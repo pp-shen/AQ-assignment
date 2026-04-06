@@ -1,42 +1,11 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-# Source code for the placeholder broken validator.
-# Hidden failure mode: silently accepts every file without checking normals.
-_BROKEN_VALIDATOR_SOURCE = '''\
-"""stl_validator_provided.py — provided STL validation tool.
-
-Reads an ASCII STL file and reports triangle count and validity.
-
-NOTE: This validator does NOT check that declared face normals are
-consistent with the normal implied by vertex winding order.  Files
-with inverted normals will be reported as valid.
-"""
-import json
-import sys
-
-
-def parse_stl(path: str) -> dict:
-    triangles = 0
-    with open(path, "r", errors="replace") as fh:
-        for line in fh:
-            line = line.strip()
-            if line.startswith("facet normal"):
-                triangles += 1
-    # Always reports valid — does not verify normal consistency.
-    return {"valid": True, "triangle_count": triangles}
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "usage: stl_validator_provided.py <file.stl>"}))
-        sys.exit(1)
-    result = parse_stl(sys.argv[1])
-    print(json.dumps(result))
-'''
+_FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
 class STLEnvironment:
@@ -120,7 +89,8 @@ class STLEnvironment:
         return resolved
 
     def _seed_broken_validator(self) -> None:
-        """Write the placeholder broken validator into the working directory."""
+        """Copy the broken validator from fixtures into the working directory."""
+        src = _FIXTURES_DIR / "stl_validator_provided.py"
         dest = self.working_dir / "stl_validator_provided.py"
         if not dest.exists():
-            dest.write_text(_BROKEN_VALIDATOR_SOURCE, encoding="utf-8")
+            shutil.copy2(src, dest)
