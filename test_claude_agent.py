@@ -1,5 +1,9 @@
 import sys
 sys.path.insert(0, ".")
+import logging
+logging.basicConfig(level=logging.WARNING)
+
+
 from toolsmithbench.tasks import stl_ep1_broken_validator
 from toolsmithbench.task import get_task
 from toolsmithbench.runner import Runner

@@ -4,14 +4,14 @@ import json
 import logging
 import os
 
-import anthropic
+import urllib.request
 
 logger = logging.getLogger(__name__)
 
-_BASE_URL = "https://openrouter.ai/api/v1"
+_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# OpenRouter model ID for Claude Sonnet 4 (equivalent to claude-sonnet-4-20250514).
-_MODEL = "anthropic/claude-sonnet-4-0"
+# OpenRouter model ID for Claude Sonnet 4.6.
+_MODEL = "anthropic/claude-sonnet-4.6"
 
 _SYSTEM_PROMPT = """\
 You are a tool-authoring agent running inside a benchmark harness for STL geometry validation.
@@ -76,9 +76,9 @@ done
 
 
 class ClaudeAgent:
-    """Benchmark agent backed by the Claude API.
+    """Benchmark agent that calls OpenRouter via direct HTTP POST.
 
-    Maintains full conversation history across steps so Claude has
+    Maintains full conversation history across steps so the model has
     context of every prior action and result.
     """
 
@@ -86,12 +86,15 @@ class ClaudeAgent:
         api_key = os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
             raise EnvironmentError("OPENROUTER_API_KEY environment variable is not set")
-        self._client = anthropic.Anthropic(api_key=api_key, base_url=_BASE_URL)
+        self._headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
         self._model = model
         self._history: list[dict] = []
 
     def step(self, observation: dict) -> tuple[str, dict]:
-        """Send the current observation to Claude and parse its (action, args) response.
+        """Send the current observation to the model and parse its (action, args) response.
 
         Args:
             observation: dict from the runner — contains instructions,
@@ -105,16 +108,17 @@ class ClaudeAgent:
             {"role": "user", "content": _format_observation(observation)}
         )
 
+        messages = [{"role": "system", "content": _SYSTEM_PROMPT}] + self._history
+
         try:
-            response = self._client.messages.create(
-                model=self._model,
-                max_tokens=4096,
-                system=_SYSTEM_PROMPT,
-                messages=self._history,
-            )
-            raw = response.content[0].text.strip()
+            body = json.dumps(
+                {"model": self._model, "max_tokens": 4096, "messages": messages}
+            ).encode()
+            req = urllib.request.Request(_URL, data=body, headers=self._headers, method="POST")
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                raw = json.loads(resp.read())["choices"][0]["message"]["content"].strip()
         except Exception as exc:
-            logger.error("Claude API call failed: %s", exc)
+            logger.error("API call failed: %s", exc)
             return ("done", {})
 
         self._history.append({"role": "assistant", "content": raw})
@@ -149,26 +153,25 @@ def _format_observation(obs: dict) -> str:
 
 
 def _parse_response(raw: str) -> tuple[str, dict]:
-    """Parse Claude's JSON response into (action, args).
+    """Parse the model's JSON response into (action, args).
 
-    Strips markdown code fences if present.
-    Falls back to ("done", {}) on any parse error.
+    Scans for the first { ... } object in the text so leading prose and
+    markdown fences don't cause a parse failure.
+    Falls back to ("done", {}) if no valid JSON object is found.
     """
-    text = raw.strip()
-
-    # Strip ```json ... ``` or ``` ... ``` fences.
-    if text.startswith("```"):
-        lines = text.splitlines()
-        end = len(lines) - 1 if lines[-1].strip() == "```" else len(lines)
-        text = "\n".join(lines[1:end])
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end == -1 or end < start:
+        logger.warning("No JSON object found in model response:\n%s", raw)
+        return ("done", {})
 
     try:
-        data = json.loads(text)
+        data = json.loads(raw[start : end + 1])
         action = str(data.get("action", "done"))
         args = data.get("args", {})
         if not isinstance(args, dict):
             args = {}
         return action, args
     except json.JSONDecodeError as exc:
-        logger.warning("Failed to parse Claude response as JSON: %s\nRaw: %r", exc, raw)
+        logger.warning("Failed to parse model response as JSON: %s\nFull raw response:\n%s", exc, raw)
         return ("done", {})
