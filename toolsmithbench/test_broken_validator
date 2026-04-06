@@ -1,0 +1,8 @@
+import sys
+sys.path.insert(0, ".")
+import toolsmithbench.tasks.stl_ep1_broken_validator
+from toolsmithbench.task import get_task
+
+t = get_task("stl_ep1_broken_validator")
+print(t.task_id)
+print(t.instructions)

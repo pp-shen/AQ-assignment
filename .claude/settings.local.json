@@ -4,7 +4,8 @@
       "Bash(python toolsmithbench/fixtures/stl_validator_provided.py toolsmithbench/fixtures/good_mesh.stl)",
       "Bash(python toolsmithbench/fixtures/stl_validator_provided.py toolsmithbench/fixtures/bad_normals.stl)",
       "Bash(python toolsmithbench/fixtures/stl_validator_provided.py toolsmithbench/fixtures/missing_faces.stl)",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(python -c ':*)"
     ]
   }
 }
