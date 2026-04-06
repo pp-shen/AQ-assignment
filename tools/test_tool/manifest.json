@@ -1,0 +1,10 @@
+{
+  "tool_id": "test_tool",
+  "created_at": "2026-04-06T21:14:04.477803+00:00",
+  "name": "Test Tool",
+  "description": "Just a test",
+  "tags": [
+    "test"
+  ],
+  "authored_in_task": "test_task"
+}
