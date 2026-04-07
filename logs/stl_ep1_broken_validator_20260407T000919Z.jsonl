@@ -1,0 +1,2 @@
+{"step": 1, "task_id": "stl_ep1_broken_validator", "action": "tool_library_register", "args": {"tool_id": "test_normal_checker", "code": "def check(): pass", "manifest": {"name": "Test", "description": "d", "tags": ["stl", "validation"], "authored_in_task": "stl_ep1_broken_validator"}}, "result": "ok", "tool_library_lookup": false, "timestamp": "2026-04-07T00:09:19.085332+00:00"}
+{"step": 2, "task_id": "stl_ep1_broken_validator", "action": "done", "args": {}, "result": "ok", "tool_library_lookup": false, "timestamp": "2026-04-07T00:09:19.087840+00:00"}

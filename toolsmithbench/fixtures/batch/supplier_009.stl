@@ -1,0 +1,23 @@
+solid supplier_009
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 0.000000 8.000000 0.000000
+      vertex 0.000000 9.000000 0.000000
+      vertex 1.000000 8.000000 0.000000
+    endloop
+  endfacet
+  facet normal 0.000000 -1.000000 0.000000
+    outer loop
+      vertex 0.000000 8.000000 0.000000
+      vertex 1.000000 8.000000 0.000000
+      vertex 0.000000 8.000000 1.000000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex 0.000000 8.000000 0.000000
+      vertex 0.000000 8.000000 1.000000
+      vertex 0.000000 9.000000 0.000000
+    endloop
+  endfacet
+endsolid supplier_009

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from toolsmithbench.envs.stl_env import STLEnvironment
 from toolsmithbench.task import TaskSpec
+from toolsmithbench.tool_library import ToolLibrary
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class Runner:
         """
         working_dir = Path(tempfile.mkdtemp(prefix=f"tsb_{task.task_id}_"))
         env = STLEnvironment(working_dir)
+        library = ToolLibrary()  # always uses the fixed tools/ dir on disk
         trace: list[dict] = []
 
         logger.info("run START  task_id=%r  working_dir=%s", task.task_id, working_dir)
@@ -66,7 +68,7 @@ class Runner:
                 logger.info("step %d  action=done — agent signalled completion", step)
                 break
 
-            result, is_library_lookup = _dispatch(env, action, args)
+            result, is_library_lookup = _dispatch(env, library, action, args)
 
             event = _make_event(
                 step, task.task_id, action, args, result, is_library_lookup, timestamp
@@ -93,12 +95,14 @@ class Runner:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _dispatch(env: STLEnvironment, action: str, args: dict) -> tuple[object, bool]:
-    """Route *action* to the correct environment method.
+def _dispatch(
+    env: STLEnvironment, library: ToolLibrary, action: str, args: dict
+) -> tuple[object, bool]:
+    """Route *action* to the environment or the tool library.
 
     Returns ``(result, is_library_lookup)`` where *result* is whatever the
-    environment method returns and *is_library_lookup* flags whether the action
-    was a tool-library query.
+    handler returns and *is_library_lookup* flags whether the action was a
+    tool-library query (used for trace annotation).
     """
     is_library_lookup = action in _LIBRARY_LOOKUP_ACTIONS
     try:
@@ -111,10 +115,11 @@ def _dispatch(env: STLEnvironment, action: str, args: dict) -> tuple[object, boo
             result = env.run_python(args["path"])
         elif action == "list_files":
             result = env.list_files()
-        elif action in _LIBRARY_LOOKUP_ACTIONS:
-            # Tool-library actions are not routed through the environment —
-            # they are handled by the harness layer (not yet implemented).
-            result = {"error": f"action {action!r} not yet wired to ToolLibrary"}
+        elif action == "tool_library_search":
+            result = library.search(args.get("tags", []))
+        elif action == "tool_library_register":
+            library.register(args["tool_id"], args["code"], args.get("manifest", {}))
+            result = "ok"
         else:
             result = {"error": f"unknown action {action!r}"}
     except Exception as exc:  # noqa: BLE001

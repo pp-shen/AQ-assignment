@@ -1,0 +1,27 @@
+{
+  "description": "Ground truth validity labels for the 20-file supplier batch (episode 2).",
+  "fixtures_dir": "fixtures/batch",
+  "normal_check_required": true,
+  "cases": [
+    {"file": "supplier_001.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."},
+    {"file": "supplier_002.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have declared normals opposite to winding order (scale 1.0)."},
+    {"file": "supplier_003.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.5)."},
+    {"file": "supplier_004.stl", "valid": false, "failure_mode": "open_mesh",       "notes": "Missing hypotenuse face — 3 open boundary edges (scale 1.0)."},
+    {"file": "supplier_005.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 0.5)."},
+    {"file": "supplier_006.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 2.0)."},
+    {"file": "supplier_007.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 1.0)."},
+    {"file": "supplier_008.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 0.75)."},
+    {"file": "supplier_009.stl", "valid": false, "failure_mode": "open_mesh",       "notes": "Missing hypotenuse face — 3 open boundary edges (scale 1.0)."},
+    {"file": "supplier_010.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.25)."},
+    {"file": "supplier_011.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 1.0)."},
+    {"file": "supplier_012.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."},
+    {"file": "supplier_013.stl", "valid": false, "failure_mode": "open_mesh",       "notes": "Missing hypotenuse face — 3 open boundary edges (scale 2.0)."},
+    {"file": "supplier_014.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 0.5)."},
+    {"file": "supplier_015.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."},
+    {"file": "supplier_016.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 1.5)."},
+    {"file": "supplier_017.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."},
+    {"file": "supplier_018.stl", "valid": false, "failure_mode": "open_mesh",       "notes": "Missing hypotenuse face — 3 open boundary edges (scale 0.75)."},
+    {"file": "supplier_019.stl", "valid": false, "failure_mode": "inverted_normals","notes": "Faces 3-4 have inverted declared normals (scale 1.0)."},
+    {"file": "supplier_020.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."}
+  ]
+}
