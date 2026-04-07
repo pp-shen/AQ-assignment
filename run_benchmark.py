@@ -2,13 +2,16 @@
 """run_benchmark.py — reproduce ToolsmithBench results for the STL sequence.
 
 Usage:
-    python run_benchmark.py           # full sweep: all 6 episodes × all models
-    python run_benchmark.py --test    # quick check: ep4/5/6 only, first model only
+    python run_benchmark.py              # full sweep: all 6 episodes × all models
+    python run_benchmark.py --test       # quick check: ep4/5/6, first model only
+    python run_benchmark.py --no-library # control comparison (lib ON vs OFF)
+                                         # claude-sonnet-4.6 × ep1/ep2/ep3
 """
 from __future__ import annotations
 
 import logging
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -82,6 +85,24 @@ def _find_library_tool(tools_dir: Path) -> Path | None:
     return None
 
 
+def _find_working_dir_tool(working_dir: Path) -> Path | None:
+    """Fallback tool finder for runs where the tool library is disabled.
+
+    Picks the most recently modified .py file in *working_dir* that isn't the
+    provided validator. Returns None if nothing was authored.
+    """
+    candidates = [
+        p for p in working_dir.glob("*.py")
+        if p.name != "stl_validator_provided.py"
+    ]
+    if not candidates:
+        logger.warning("no authored .py file found in %s", working_dir)
+        return None
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    logger.info("using working-dir tool: %s", candidates[0].name)
+    return candidates[0]
+
+
 # ---------------------------------------------------------------------------
 # Trace helpers
 # ---------------------------------------------------------------------------
@@ -115,13 +136,19 @@ def run_episode(
     *,
     model: str,
     tools_dir: Path,
+    library_enabled: bool = True,
     retry_if_trivial: bool = False,
 ) -> tuple[VerifierResult, list[dict]]:
     task = get_task(task_id)
+    if not library_enabled:
+        # TaskSpec is frozen at import time; create a per-run override.
+        task = replace(task, tool_library_enabled=False)
+
     agent = ClaudeAgent(model=model)
     runner = Runner()
 
-    _banner(f"Episode: {task_id}  [{model}]")
+    label = f"{task_id}  [{model}]" + ("  (no-library)" if not library_enabled else "")
+    _banner(f"Episode: {label}")
     trace, working_dir = runner.run(task, agent, tools_dir=tools_dir)
     logger.info("working_dir: %s", working_dir)
 
@@ -129,12 +156,15 @@ def run_episode(
         logger.warning(
             "%s finished in %d step(s) with no report — retrying once", task_id, len(trace)
         )
-        _banner(f"Episode: {task_id}  [{model}]  (retry)")
+        _banner(f"Episode: {label}  (retry)")
         agent = ClaudeAgent(model=model)
         trace, working_dir = runner.run(task, agent, tools_dir=tools_dir)
         logger.info("retry working_dir: %s", working_dir)
 
-    tool_path = _find_library_tool(tools_dir)
+    if library_enabled:
+        tool_path = _find_library_tool(tools_dir)
+    else:
+        tool_path = _find_working_dir_tool(working_dir)
     logger.info("tool under evaluation: %s", tool_path)
 
     result = STLVerifier(task.verifier_config["oracle"]).verify(
@@ -155,14 +185,34 @@ def run_model(
     model_id: str,
     model_label: str,
     episodes: list[tuple[str, dict]],
+    *,
+    library_enabled: bool = True,
+    tools_dir_label: str | None = None,
+    write_reports: bool = True,
 ) -> list[VerifierResult]:
-    """Run *episodes* for *model_id* with an isolated tool library."""
-    tools_dir = _TOOLS_BASE / model_label
+    """Run *episodes* for *model_id* with an isolated tool library.
+
+    Args:
+        library_enabled:  Pass False to disable tool_library_search /
+                          tool_library_register for every episode.
+        tools_dir_label:  Override the tools/ subdirectory.  Defaults to
+                          *model_label*; pass a distinct label (e.g.
+                          "claude-sonnet-4.6-nolib") to keep this run's
+                          state isolated from other runs.
+        write_reports:    Whether to write per-model reports to results/.
+    """
+    tools_dir = _TOOLS_BASE / (tools_dir_label or model_label)
     tools_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[VerifierResult] = []
     for task_id, extra in episodes:
-        result, _ = run_episode(task_id, model=model_id, tools_dir=tools_dir, **extra)
+        result, _ = run_episode(
+            task_id,
+            model=model_id,
+            tools_dir=tools_dir,
+            library_enabled=library_enabled,
+            **extra,
+        )
         results.append(result)
 
     # Amortization: compare every episode vs the first one that ran.
@@ -172,8 +222,9 @@ def run_model(
             if baseline > 0 and r.steps_taken < baseline:
                 r.reuse_gain = (baseline - r.steps_taken) / baseline
 
-    results_dir = Path(__file__).parent / "results" / model_label
-    generate_reports(results, results_dir=results_dir)
+    if write_reports:
+        results_dir = Path(__file__).parent / "results" / (tools_dir_label or model_label)
+        generate_reports(results, results_dir=results_dir)
 
     return results
 
@@ -200,11 +251,93 @@ def _print_model_summary(model_label: str, results: list[VerifierResult]) -> Non
     print(f"\n  Overall: {overall_passed}/{len(results)} passed  |  avg score {avg_score:.2f}")
 
 
+def _print_library_comparison(
+    with_lib: list[VerifierResult],
+    without_lib: list[VerifierResult],
+) -> None:
+    """Print a side-by-side table comparing library-on vs library-off runs."""
+    _banner("LIBRARY ON vs OFF — claude-sonnet-4.6")
+
+    by_id_on  = {r.task_id: r for r in with_lib}
+    by_id_off = {r.task_id: r for r in without_lib}
+    task_ids  = [r.task_id for r in with_lib]
+
+    header = f"  {'task':30s}  {'lib ON':>22s}    {'lib OFF':>22s}    {'Δ steps':>9s}"
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+
+    on_total = off_total = 0
+    for tid in task_ids:
+        on  = by_id_on[tid]
+        off = by_id_off.get(tid)
+        on_str  = f"{'PASS' if on.passed else 'FAIL'} score={on.score:.2f} steps={on.steps_taken}"
+        if off is None:
+            print(f"  {tid:30s}  {on_str:>22s}    {'(not run)':>22s}    {'—':>9s}")
+            continue
+        off_str = f"{'PASS' if off.passed else 'FAIL'} score={off.score:.2f} steps={off.steps_taken}"
+        delta   = off.steps_taken - on.steps_taken
+        delta_s = f"{delta:+d}" if delta != 0 else "0"
+        print(f"  {tid:30s}  {on_str:>22s}    {off_str:>22s}    {delta_s:>9s}")
+        on_total  += on.steps_taken
+        off_total += off.steps_taken
+
+    print("  " + "-" * (len(header) - 2))
+    total_delta = off_total - on_total
+    print(f"  {'TOTAL steps':30s}  {on_total:>22d}    {off_total:>22d}"
+          f"    {total_delta:+d}")
+    if on_total > 0:
+        print(f"\n  Library reduced total steps by "
+              f"{(off_total - on_total) / off_total:.1%} "
+              f"({off_total} → {on_total})" if off_total > 0 else "")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
+_NO_LIBRARY_EPISODES: list[tuple[str, dict]] = [
+    ("stl_ep1_broken_validator", {}),
+    ("stl_ep2_batch_processing", {"retry_if_trivial": True}),
+    ("stl_ep3_binary_variant",   {}),
+]
+
+_NO_LIBRARY_MODEL = ("anthropic/claude-sonnet-4.6", "claude-sonnet-4.6")
+
+
+def _run_no_library_comparison() -> None:
+    """Run claude-sonnet-4.6 on ep1/2/3 twice — once with library, once without.
+
+    Both runs use isolated tools/ subdirectories so they cannot influence
+    each other.  Prints a side-by-side comparison and the standard per-run
+    summary for each.
+    """
+    model_id, model_label = _NO_LIBRARY_MODEL
+
+    _banner("CONTROL — library ON")
+    with_lib = run_model(
+        model_id, model_label, _NO_LIBRARY_EPISODES,
+        library_enabled=True,
+        tools_dir_label=f"{model_label}-lib",
+    )
+
+    _banner("CONTROL — library OFF")
+    without_lib = run_model(
+        model_id, model_label, _NO_LIBRARY_EPISODES,
+        library_enabled=False,
+        tools_dir_label=f"{model_label}-nolib",
+    )
+
+    _print_model_summary(f"{model_label}  (lib ON)",  with_lib)
+    _print_model_summary(f"{model_label}  (lib OFF)", without_lib)
+    _print_library_comparison(with_lib, without_lib)
+    print("\nReports written to results/")
+
+
 def main() -> None:
+    if "--no-library" in sys.argv:
+        _run_no_library_comparison()
+        return
+
     test_mode = "--test" in sys.argv
     episodes = _NEW_EPISODES if test_mode else _ALL_EPISODES
     models   = _MODELS[:1]  if test_mode else _MODELS

@@ -1,0 +1,188 @@
+"""stl_batch_validator.py — Batch STL validation tool.
+
+Reads ASCII STL files and checks triangle count, surface area, manifold
+integrity (open edges), and face normal consistency (inverted normals).
+Produces a JSON report compatible with manufacturing validation pipelines.
+"""
+import json
+import math
+import sys
+
+
+def _cross(a, b):
+    return (
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    )
+
+
+def _sub(a, b):
+    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def _magnitude(v):
+    return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+
+
+def _normalize(v):
+    m = _magnitude(v)
+    if m < 1e-10:
+        return v
+    return (v[0] / m, v[1] / m, v[2] / m)
+
+
+def _triangle_area(v1, v2, v3):
+    return 0.5 * _magnitude(_cross(_sub(v2, v1), _sub(v3, v1)))
+
+
+def parse_stl(path: str) -> dict:
+    """Parse and validate a single ASCII STL file."""
+    issues = []
+    triangles = []  # list of (declared_normal, [v1, v2, v3])
+
+    with open(path, "r", errors="replace") as fh:
+        lines = fh.readlines()
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        if line.startswith("facet normal"):
+            parts = line.split()
+            try:
+                declared_normal = (float(parts[2]), float(parts[3]), float(parts[4]))
+            except (IndexError, ValueError):
+                issues.append(f"Malformed facet normal at line {i + 1}")
+                i += 1
+                continue
+
+            vertices = []
+            i += 1
+            if i < len(lines) and lines[i].strip() == "outer loop":
+                i += 1
+                for _ in range(3):
+                    if i < len(lines):
+                        vline = lines[i].strip()
+                        if vline.startswith("vertex"):
+                            vparts = vline.split()
+                            try:
+                                vertices.append(
+                                    (float(vparts[1]), float(vparts[2]), float(vparts[3]))
+                                )
+                            except (IndexError, ValueError):
+                                issues.append(f"Malformed vertex at line {i + 1}")
+                        i += 1
+
+            if len(vertices) == 3:
+                triangles.append((declared_normal, vertices))
+            else:
+                issues.append(f"Incomplete triangle near line {i + 1}")
+            continue
+
+        i += 1
+
+    if not triangles:
+        issues.append("No valid faces found")
+
+    # Manifold check: every edge must be shared by exactly 2 triangles.
+    edge_count: dict = {}
+    for _, verts in triangles:
+        rounded = [tuple(round(x, 6) for x in v) for v in verts]
+        for j in range(3):
+            edge = tuple(sorted([rounded[j], rounded[(j + 1) % 3]]))
+            edge_count[edge] = edge_count.get(edge, 0) + 1
+
+    open_edges = sum(1 for cnt in edge_count.values() if cnt == 1)
+    if open_edges > 0:
+        issues.append(f"Mesh has {open_edges} open edge(s) — not a closed solid")
+
+    # Normal consistency check
+    for declared_normal, verts in triangles:
+        edge1 = _sub(verts[1], verts[0])
+        edge2 = _sub(verts[2], verts[0])
+        cross = _cross(edge1, edge2)
+        if _magnitude(cross) < 1e-10:
+            continue  # degenerate triangle, skip
+        winding_normal = _normalize(cross)
+        similarity = _dot(_normalize(declared_normal), winding_normal)
+        if similarity < -0.99:
+            issues.append(
+                f"Face normal is inverted relative to winding order "
+                f"(similarity={similarity:.3f})"
+            )
+
+    surface_area = sum(_triangle_area(*verts) for _, verts in triangles)
+
+    return {
+        "valid": len(issues) == 0,
+        "triangle_count": len(triangles),
+        "surface_area": round(surface_area, 6),
+        "issues": issues,
+    }
+
+
+def classify_reason(issues):
+    """Classify issues into a concise reason string."""
+    reasons = []
+    for issue in issues:
+        if "inverted" in issue.lower():
+            reasons.append("inverted_normals")
+        elif "open edge" in issue.lower():
+            reasons.append("open_edges")
+        elif "no valid faces" in issue.lower():
+            reasons.append("no_valid_faces")
+        elif "malformed" in issue.lower():
+            reasons.append("malformed_geometry")
+        elif "incomplete" in issue.lower():
+            reasons.append("incomplete_triangle")
+        else:
+            reasons.append(issue)
+    seen = set()
+    unique = []
+    for r in reasons:
+        if r not in seen:
+            seen.add(r)
+            unique.append(r)
+    return ", ".join(unique)
+
+
+def validate_batch(file_list):
+    """Validate a list of STL file paths and return results list."""
+    results = []
+    for path in file_list:
+        try:
+            result = parse_stl(path)
+            entry = {"file": path, "valid": result["valid"]}
+            if not result["valid"]:
+                entry["reason"] = classify_reason(result["issues"])
+            results.append(entry)
+        except Exception as e:
+            results.append({"file": path, "valid": False, "reason": f"error: {str(e)}"})
+    return results
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "usage: stl_batch_validator.py <file1.stl> [file2.stl ...] OR --report <output.json> <file1.stl> ..."}))
+        sys.exit(1)
+
+    args = sys.argv[1:]
+    output_file = None
+    if args[0] == "--report":
+        output_file = args[1]
+        args = args[2:]
+
+    results = validate_batch(args)
+    report = {"results": results}
+
+    if output_file:
+        with open(output_file, "w") as f:
+            json.dump(report, f, indent=2)
+        print(f"Report written to {output_file}")
+    else:
+        print(json.dumps(report, indent=2))

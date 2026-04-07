@@ -64,6 +64,7 @@ class Runner:
             logger.info("seeded %d STL files from %s", len(list(src_dir.glob("*.stl"))), src_dir)
 
         library = ToolLibrary(tools_dir) if tools_dir is not None else ToolLibrary()
+        library_enabled = task.tool_library_enabled
         trace: list[dict] = []
 
         logger.info("run START  task_id=%r  working_dir=%s", task.task_id, working_dir)
@@ -86,7 +87,9 @@ class Runner:
                 logger.info("step %d  action=done — agent signalled completion", step)
                 break
 
-            result, is_library_lookup = _dispatch(env, library, action, args)
+            result, is_library_lookup = _dispatch(
+                env, library, action, args, library_enabled=library_enabled
+            )
 
             event = _make_event(
                 step, task.task_id, action, args, result, is_library_lookup, timestamp
@@ -114,13 +117,22 @@ class Runner:
 # ---------------------------------------------------------------------------
 
 def _dispatch(
-    env: STLEnvironment, library: ToolLibrary, action: str, args: dict
+    env: STLEnvironment,
+    library: ToolLibrary,
+    action: str,
+    args: dict,
+    *,
+    library_enabled: bool = True,
 ) -> tuple[object, bool]:
     """Route *action* to the environment or the tool library.
 
     Returns ``(result, is_library_lookup)`` where *result* is whatever the
     handler returns and *is_library_lookup* flags whether the action was a
     tool-library query (used for trace annotation).
+
+    When *library_enabled* is False, ``tool_library_search`` and
+    ``tool_library_register`` short-circuit with an explanatory error so
+    the agent can observe that the library is unavailable.
     """
     is_library_lookup = action in _LIBRARY_LOOKUP_ACTIONS
     try:
@@ -134,10 +146,16 @@ def _dispatch(
         elif action == "list_files":
             result = env.list_files()
         elif action == "tool_library_search":
-            result = library.search(args.get("tags", []))
+            if not library_enabled:
+                result = {"error": "tool library disabled for this run"}
+            else:
+                result = library.search(args.get("tags", []))
         elif action == "tool_library_register":
-            library.register(args["tool_id"], args["code"], args.get("manifest", {}))
-            result = "ok"
+            if not library_enabled:
+                result = {"error": "tool library disabled for this run"}
+            else:
+                library.register(args["tool_id"], args["code"], args.get("manifest", {}))
+                result = "ok"
         else:
             result = {"error": f"unknown action {action!r}"}
     except Exception as exc:  # noqa: BLE001
