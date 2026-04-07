@@ -1,3 +1,4 @@
 task_id,passed,score,tool_authored,tool_registered,tool_reused,steps_taken,reuse_gain
-stl_ep1_broken_validator,True,1.0,True,True,True,19,
-stl_ep2_batch_processing,True,1.0,True,True,True,7,0.631578947368421
+stl_ep1_broken_validator,True,1.0,True,True,True,20,
+stl_ep2_batch_processing,False,0.0,False,False,False,1,0.95
+stl_ep3_binary_variant,True,1.0,True,True,True,16,0.2

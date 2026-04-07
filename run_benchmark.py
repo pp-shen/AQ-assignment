@@ -4,8 +4,8 @@
 Usage:
     python run_benchmark.py
 
-Runs episode 1 then episode 2, verifies each, writes results/, and prints a
-terminal summary.  The OPENROUTER_API_KEY environment variable must be set.
+Runs episodes 1, 2, and 3 in order, verifies each, writes results/, and prints
+a terminal summary.  The OPENROUTER_API_KEY environment variable must be set.
 """
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ logger = logging.getLogger("benchmark")
 
 import toolsmithbench.tasks.stl_ep1_broken_validator  # noqa: E402 — registers task
 import toolsmithbench.tasks.stl_ep2_batch_processing  # noqa: E402 — registers task
+import toolsmithbench.tasks.stl_ep3_binary_variant    # noqa: E402 — registers task
 from toolsmithbench.agents.claude_agent import ClaudeAgent
 from toolsmithbench.reporting import generate_reports
 from toolsmithbench.runner import Runner
@@ -116,12 +117,12 @@ def run_episode(task_id: str, *, retry_if_trivial: bool = False) -> tuple[Verifi
 
     if retry_if_trivial and _is_trivial_run(trace, working_dir):
         logger.warning(
-            "ep2 finished in %d step(s) with no report — looks like a parse failure, "
+            "%s finished in %d step(s) with no report — looks like a parse failure, "
             "retrying once",
-            len(trace),
+            task_id, len(trace),
         )
         _banner(f"Episode: {task_id} (retry)")
-        agent.reset()
+        agent = ClaudeAgent()
         trace, working_dir = runner.run(task, agent)
         logger.info("retry working_dir: %s", working_dir)
 
@@ -166,28 +167,62 @@ def _print_result(r: VerifierResult) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    result1, trace1 = run_episode("stl_ep1_broken_validator")
-    result2, trace2 = run_episode("stl_ep2_batch_processing", retry_if_trivial=True)
+    result1, _ = run_episode("stl_ep1_broken_validator")
+    result2, _ = run_episode("stl_ep2_batch_processing", retry_if_trivial=True)
+    result3, _ = run_episode("stl_ep3_binary_variant")
 
-    # Amortization gain: how much cheaper was ep2 relative to ep1?
-    if result1.steps_taken > 0 and result2.steps_taken < result1.steps_taken:
-        result2.reuse_gain = (result1.steps_taken - result2.steps_taken) / result1.steps_taken
+    # Amortization gain for each episode vs ep1 (the baseline).
+    ep1_steps = result1.steps_taken
+    if ep1_steps > 0:
+        if result2.steps_taken < ep1_steps:
+            result2.reuse_gain = (ep1_steps - result2.steps_taken) / ep1_steps
+        if result3.steps_taken < ep1_steps:
+            result3.reuse_gain = (ep1_steps - result3.steps_taken) / ep1_steps
 
-    generate_reports([result1, result2])
+    all_results = [result1, result2, result3]
+    generate_reports(all_results)
 
     _banner("BENCHMARK SUMMARY")
-    for r in (result1, result2):
+    for r in all_results:
         print(f"\n{r.task_id}")
         _print_result(r)
 
-    overall_passed = sum(r.passed for r in (result1, result2))
-    avg_score = (result1.score + result2.score) / 2
-    print(f"\nOverall : {overall_passed}/2 passed  |  avg score {avg_score:.2f}")
-    if result2.reuse_gain is not None:
-        saved = result1.steps_taken - result2.steps_taken
-        print(f"Amortization: ep2 used {saved} fewer steps than ep1 "
-              f"({result2.reuse_gain:.1%} reduction)")
+    overall_passed = sum(r.passed for r in all_results)
+    avg_score = sum(r.score for r in all_results) / len(all_results)
+    print(f"\nOverall : {overall_passed}/3 passed  |  avg score {avg_score:.2f}")
+
+    _print_amortization(result1, result2, result3)
     print("\nReports written to results/")
+
+
+def _print_amortization(
+    ep1: VerifierResult, ep2: VerifierResult, ep3: VerifierResult
+) -> None:
+    """Print a compact amortization table comparing ep2 and ep3 against ep1."""
+    baseline = ep1.steps_taken
+    if baseline == 0:
+        return
+
+    print("\nAmortization vs ep1 baseline:")
+    for ep, label in ((ep2, "ep2"), (ep3, "ep3")):
+        saved = baseline - ep.steps_taken
+        if saved > 0:
+            print(f"  {label}: {ep.steps_taken} steps  ({saved} fewer, "
+                  f"{saved/baseline:.1%} reduction)")
+        elif saved == 0:
+            print(f"  {label}: {ep.steps_taken} steps  (no reduction)")
+        else:
+            print(f"  {label}: {ep.steps_taken} steps  ({-saved} more than ep1)")
+
+    # Also show ep3 vs ep2 directly.
+    ep2_steps = ep2.steps_taken
+    if ep2_steps > 0:
+        saved32 = ep2_steps - ep3.steps_taken
+        if saved32 > 0:
+            print(f"\n  ep3 vs ep2: {saved32} fewer steps "
+                  f"({saved32/ep2_steps:.1%} reduction over ep2)")
+        elif saved32 < 0:
+            print(f"\n  ep3 vs ep2: {-saved32} more steps than ep2")
 
 
 if __name__ == "__main__":

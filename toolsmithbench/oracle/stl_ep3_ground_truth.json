@@ -1,0 +1,18 @@
+{
+  "description": "Ground truth for the binary/ASCII mixed batch (episode 3).",
+  "fixtures_dir": "fixtures/binary",
+  "verification_mode": "tool",
+  "normal_check_required": true,
+  "cases": [
+    {"file": "binary_001.stl", "valid": true,  "failure_mode": null,               "format": "binary", "notes": "Binary, valid tetrahedron (scale 1.0)."},
+    {"file": "binary_002.stl", "valid": false, "failure_mode": "inverted_normals", "format": "binary", "notes": "Binary, faces 3-4 have inverted declared normals (scale 1.0)."},
+    {"file": "binary_003.stl", "valid": true,  "failure_mode": null,               "format": "ascii",  "notes": "ASCII, valid tetrahedron (scale 1.5)."},
+    {"file": "binary_004.stl", "valid": false, "failure_mode": "open_mesh",        "format": "binary", "notes": "Binary, missing hypotenuse face — 3 open boundary edges (scale 1.0)."},
+    {"file": "binary_005.stl", "valid": false, "failure_mode": "inverted_normals", "format": "ascii",  "notes": "ASCII, faces 3-4 have inverted declared normals (scale 0.5)."},
+    {"file": "binary_006.stl", "valid": true,  "failure_mode": null,               "format": "binary", "notes": "Binary, valid tetrahedron (scale 2.0)."},
+    {"file": "binary_007.stl", "valid": true,  "failure_mode": null,               "format": "ascii",  "notes": "ASCII, valid tetrahedron (scale 0.75)."},
+    {"file": "binary_008.stl", "valid": false, "failure_mode": "inverted_normals", "format": "binary", "notes": "Binary, faces 3-4 have inverted declared normals (scale 0.5)."},
+    {"file": "binary_009.stl", "valid": false, "failure_mode": "open_mesh",        "format": "binary", "notes": "Binary, missing hypotenuse face — 3 open boundary edges (scale 1.5)."},
+    {"file": "binary_010.stl", "valid": true,  "failure_mode": null,               "format": "ascii",  "notes": "ASCII, valid tetrahedron (scale 1.25)."}
+  ]
+}

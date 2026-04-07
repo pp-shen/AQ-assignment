@@ -21,6 +21,7 @@ _CSV_FIELDS = [
 # episode_sequence tasks whose step counts feed the reuse analysis
 _EP1_TASK = "stl_ep1_broken_validator"
 _EP2_TASK = "stl_ep2_batch_processing"
+_EP3_TASK = "stl_ep3_binary_variant"
 
 
 def generate_reports(results: list[VerifierResult]) -> None:
@@ -97,57 +98,95 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
     by_task = {r.task_id: r for r in results}
     ep1 = by_task.get(_EP1_TASK)
     ep2 = by_task.get(_EP2_TASK)
+    ep3 = by_task.get(_EP3_TASK)
 
     lines: list[str] = []
-    lines.append("# Reuse Analysis: Episode 1 vs Episode 2\n")
+    lines.append("# Reuse Analysis: Episodes 1 – 3\n")
 
-    if ep1 is None or ep2 is None:
-        missing = ", ".join(
-            t for t, r in [(_EP1_TASK, ep1), (_EP2_TASK, ep2)] if r is None
-        )
-        lines.append(f"*Cannot compute reuse analysis — missing results for: {missing}*\n")
+    if ep1 is None:
+        lines.append(f"*Cannot compute reuse analysis — missing results for: {_EP1_TASK}*\n")
         (_RESULTS_DIR / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
         return
 
+    # --- Step-count table ------------------------------------------------
     lines.append("## Step counts\n")
-    lines.append("| | Episode 1 | Episode 2 |")
-    lines.append("|---|---:|---:|")
-    lines.append(f"| Steps taken | {ep1.steps_taken} | {ep2.steps_taken} |")
-    lines.append(f"| Score | {ep1.score:.2f} | {ep2.score:.2f} |")
-    lines.append(f"| Tool reused | — | {_bool(ep2.tool_reused)} |")
+
+    # Build header dynamically depending on which episodes are present.
+    ep_cols = [(ep1, "Episode 1")]
+    if ep2 is not None:
+        ep_cols.append((ep2, "Episode 2"))
+    if ep3 is not None:
+        ep_cols.append((ep3, "Episode 3"))
+
+    header = "| |" + "".join(f" {label} |" for _, label in ep_cols)
+    sep    = "|---|" + "".join(" ---: |" for _ in ep_cols)
+    lines.append(header)
+    lines.append(sep)
+
+    lines.append("| Steps taken |" + "".join(f" {ep.steps_taken} |" for ep, _ in ep_cols))
+    lines.append("| Score |"       + "".join(f" {ep.score:.2f} |"    for ep, _ in ep_cols))
+    lines.append("| Tool reused |" + "".join(
+        f" {'—' if ep is ep1 else _bool(ep.tool_reused)} |" for ep, _ in ep_cols
+    ))
     lines.append("")
 
-    if ep1.steps_taken > 0 and ep2.steps_taken < ep1.steps_taken:
-        saved = ep1.steps_taken - ep2.steps_taken
-        gain_pct = saved / ep1.steps_taken
-        lines.append("## Amortization gain\n")
-        lines.append(
-            f"Episode 2 used **{ep2.steps_taken}** steps vs episode 1's "
-            f"**{ep1.steps_taken}**, saving **{saved}** steps "
-            f"(**{gain_pct:.1%}** reduction)."
-        )
-        if ep2.tool_reused:
+    # --- Per-episode amortization vs ep1 baseline ------------------------
+    baseline = ep1.steps_taken
+    lines.append("## Amortization vs Episode 1 baseline\n")
+
+    if baseline == 0:
+        lines.append("*Episode 1 step count is zero — cannot compute reduction.*")
+    else:
+        for ep, label in ep_cols[1:]:   # skip ep1 itself
+            saved = baseline - ep.steps_taken
+            if saved > 0:
+                pct = saved / baseline
+                lines.append(
+                    f"**{label}** used **{ep.steps_taken}** steps vs episode 1's "
+                    f"**{baseline}**, saving **{saved}** steps (**{pct:.1%}** reduction)."
+                )
+                if ep.tool_reused:
+                    lines.append(
+                        f" The agent reused a library tool, which accounts for the reduction."
+                    )
+                else:
+                    lines.append(
+                        f" Note: no tool-library lookup recorded — reduction may not be "
+                        f"attributable to reuse."
+                    )
+            elif saved == 0:
+                lines.append(
+                    f"**{label}** used **{ep.steps_taken}** steps — same as episode 1. "
+                    f"No amortization gain."
+                )
+            else:
+                lines.append(
+                    f"**{label}** used **{ep.steps_taken}** steps — "
+                    f"**{-saved}** more than episode 1's **{baseline}**."
+                )
+            lines.append("")
+
+    # --- ep3 vs ep2 comparison -------------------------------------------
+    if ep2 is not None and ep3 is not None and ep2.steps_taken > 0:
+        lines.append("## Episode 3 vs Episode 2\n")
+        saved32 = ep2.steps_taken - ep3.steps_taken
+        if saved32 > 0:
+            pct = saved32 / ep2.steps_taken
             lines.append(
-                "\nThe agent reused a library tool from episode 1, which accounts "
-                "for the step reduction."
+                f"Episode 3 used **{ep3.steps_taken}** steps vs episode 2's "
+                f"**{ep2.steps_taken}**, saving **{saved32}** steps (**{pct:.1%}** reduction)."
+            )
+        elif saved32 == 0:
+            lines.append(
+                f"Episode 3 used the same number of steps as episode 2 ({ep2.steps_taken})."
             )
         else:
             lines.append(
-                "\nNote: the agent did *not* record a tool-library lookup in episode 2 — "
-                "the step reduction may not be attributable to reuse."
+                f"Episode 3 used **{ep3.steps_taken}** steps — "
+                f"**{-saved32}** more than episode 2's **{ep2.steps_taken}**."
             )
-    elif ep1.steps_taken > 0 and ep2.steps_taken >= ep1.steps_taken:
-        lines.append("## Amortization gain\n")
-        lines.append(
-            f"Episode 2 used **{ep2.steps_taken}** steps — no fewer than episode 1's "
-            f"**{ep1.steps_taken}**. No amortization gain was observed."
-        )
-        if not ep2.tool_reused:
-            lines.append(" The agent did not reuse the episode 1 tool.")
-    else:
-        lines.append("*Step count data unavailable for amortization calculation.*")
+        lines.append("")
 
-    lines.append("")
     (_RESULTS_DIR / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
 
 
