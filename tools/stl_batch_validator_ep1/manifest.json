@@ -1,0 +1,18 @@
+{
+  "tool_id": "stl_batch_validator_ep1",
+  "created_at": "2026-04-07T01:03:41.677503+00:00",
+  "name": "STL Batch Validator (Episode 1)",
+  "description": "Validates all supplier_*.stl ASCII STL files for manufacturing suitability: checks manifold closure (open edges), inverted face normals via winding-order cross-product, and degenerate triangles. Outputs validation_report.json. Fixes hidden inverted-normal bug in stl_validator_provided.py.",
+  "tags": [
+    "stl",
+    "validation",
+    "batch",
+    "manufacturing",
+    "normals",
+    "manifold",
+    "degenerate",
+    "winding-order",
+    "report"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

@@ -13,6 +13,7 @@ class TaskSpec:
     verifier_config: dict           # passed directly to verifier, never shown to agent
     episode_sequence: str | None = None   # e.g. "stl_sequence" — links related episodes
     episode_number: int | None = None     # 1, 2, 3 within a sequence
+    fixtures_dir: str | None = None       # pre-populate working dir with *.stl from here
 
 
 # Registry maps task_id -> TaskSpec

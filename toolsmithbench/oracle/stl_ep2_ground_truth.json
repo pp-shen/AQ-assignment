@@ -1,6 +1,8 @@
 {
   "description": "Ground truth validity labels for the 20-file supplier batch (episode 2).",
   "fixtures_dir": "fixtures/batch",
+  "verification_mode": "report",
+  "report_file": "validation_report.json",
   "normal_check_required": true,
   "cases": [
     {"file": "supplier_001.stl", "valid": true,  "failure_mode": null,              "notes": "Clean tetrahedron (scale 1.0)."},

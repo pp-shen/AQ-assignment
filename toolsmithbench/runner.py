@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,6 +46,14 @@ class Runner:
         """
         working_dir = Path(tempfile.mkdtemp(prefix=f"tsb_{task.task_id}_"))
         env = STLEnvironment(working_dir)
+
+        if task.fixtures_dir:
+            project_root = Path(__file__).parent.parent
+            src_dir = project_root / task.fixtures_dir
+            for stl_file in sorted(src_dir.glob("*.stl")):
+                shutil.copy2(stl_file, working_dir / stl_file.name)
+            logger.info("seeded %d STL files from %s", len(list(src_dir.glob("*.stl"))), src_dir)
+
         library = ToolLibrary()  # always uses the fixed tools/ dir on disk
         trace: list[dict] = []
 

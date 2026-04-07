@@ -93,6 +93,10 @@ class ClaudeAgent:
         self._model = model
         self._history: list[dict] = []
 
+    def reset(self) -> None:
+        """Clear conversation history. Call between episodes to prevent cross-contamination."""
+        self._history = []
+
     def step(self, observation: dict) -> tuple[str, dict]:
         """Send the current observation to the model and parse its (action, args) response.
 
