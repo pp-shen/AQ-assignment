@@ -36,8 +36,17 @@ class Runner:
                 ...  # returns (action, args)
     """
 
-    def run(self, task: TaskSpec, agent) -> tuple[list[dict], Path]:
+    def run(
+        self, task: TaskSpec, agent, *, tools_dir: Path | None = None
+    ) -> tuple[list[dict], Path]:
         """Execute *task* with *agent*.
+
+        Args:
+            task:      Task specification.
+            agent:     Agent instance with a ``step(observation) -> (action, args)`` method.
+            tools_dir: Override the tool library storage directory.  Pass a
+                       model-specific path to keep each model's tools isolated.
+                       Defaults to the package-level ``tools/`` directory.
 
         Returns:
             trace:       List of structured trace events (one per step).
@@ -54,7 +63,7 @@ class Runner:
                 shutil.copy2(stl_file, working_dir / stl_file.name)
             logger.info("seeded %d STL files from %s", len(list(src_dir.glob("*.stl"))), src_dir)
 
-        library = ToolLibrary()  # always uses the fixed tools/ dir on disk
+        library = ToolLibrary(tools_dir) if tools_dir is not None else ToolLibrary()
         trace: list[dict] = []
 
         logger.info("run START  task_id=%r  working_dir=%s", task.task_id, working_dir)

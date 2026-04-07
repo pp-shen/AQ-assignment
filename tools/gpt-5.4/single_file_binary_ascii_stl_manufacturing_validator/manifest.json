@@ -1,0 +1,11 @@
+{
+  "tool_id": "single_file_binary_ascii_stl_manufacturing_validator",
+  "created_at": "2026-04-07T02:20:05.882941+00:00",
+  "name": "Single File Binary/ASCII STL Manufacturing Validator",
+  "description": "Validates one STL file from the command line, correctly handling binary and ASCII STL and reporting manufacturing-suitability issues as JSON.",
+  "tags": [
+    "stl",
+    "validation"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

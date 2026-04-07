@@ -1,0 +1,11 @@
+{
+  "description": "Ground truth for repair task (episode 6). All fixtures have inverted normals; a correct repair tool must flip them and report valid=true.",
+  "fixtures_dir": "fixtures/repair",
+  "verification_mode": "tool",
+  "normal_check_required": false,
+  "cases": [
+    {"file": "repair_001.stl", "valid": true, "failure_mode": null, "notes": "Inverted normals (scale 1.0) — expected valid=true after repair."},
+    {"file": "repair_002.stl", "valid": true, "failure_mode": null, "notes": "Inverted normals (scale 1.5) — expected valid=true after repair."},
+    {"file": "repair_003.stl", "valid": true, "failure_mode": null, "notes": "Inverted normals (scale 0.5) — expected valid=true after repair."}
+  ]
+}

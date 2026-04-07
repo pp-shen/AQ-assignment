@@ -1,0 +1,11 @@
+{
+  "tool_id": "batch_ascii_stl_validation_report_generator",
+  "created_at": "2026-04-07T01:59:08.004199+00:00",
+  "name": "Batch ASCII STL Validation Report Generator",
+  "description": "Validates a supplier batch of ASCII STL files for open edges, non-manifold edges, degenerate triangles, and inverted normals, then writes validation_report.json.",
+  "tags": [
+    "stl",
+    "validation"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

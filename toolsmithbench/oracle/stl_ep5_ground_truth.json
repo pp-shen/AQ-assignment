@@ -1,0 +1,309 @@
+{
+  "description": "Ground truth for the 50-file large batch (episode 5).",
+  "fixtures_dir": "fixtures/large_batch",
+  "verification_mode": "report",
+  "report_file": "validation_report.json",
+  "normal_check_required": true,
+  "cases": [
+    {
+      "file": "supplier_001.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.0)."
+    },
+    {
+      "file": "supplier_002.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.5)."
+    },
+    {
+      "file": "supplier_003.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.0)."
+    },
+    {
+      "file": "supplier_004.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.5)."
+    },
+    {
+      "file": "supplier_005.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 0.5)."
+    },
+    {
+      "file": "supplier_006.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.0)."
+    },
+    {
+      "file": "supplier_007.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.5)."
+    },
+    {
+      "file": "supplier_008.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.0)."
+    },
+    {
+      "file": "supplier_009.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.5)."
+    },
+    {
+      "file": "supplier_010.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 0.5)."
+    },
+    {
+      "file": "supplier_011.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.0)."
+    },
+    {
+      "file": "supplier_012.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 1.5)."
+    },
+    {
+      "file": "supplier_013.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.0)."
+    },
+    {
+      "file": "supplier_014.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 2.5)."
+    },
+    {
+      "file": "supplier_015.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 0.5)."
+    },
+    {
+      "file": "supplier_016.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 1.0)."
+    },
+    {
+      "file": "supplier_017.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.5)."
+    },
+    {
+      "file": "supplier_018.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 2.0)."
+    },
+    {
+      "file": "supplier_019.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.5)."
+    },
+    {
+      "file": "supplier_020.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 0.5)."
+    },
+    {
+      "file": "supplier_021.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.0)."
+    },
+    {
+      "file": "supplier_022.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.5)."
+    },
+    {
+      "file": "supplier_023.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.0)."
+    },
+    {
+      "file": "supplier_024.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.5)."
+    },
+    {
+      "file": "supplier_025.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 0.5)."
+    },
+    {
+      "file": "supplier_026.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.0)."
+    },
+    {
+      "file": "supplier_027.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.5)."
+    },
+    {
+      "file": "supplier_028.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.0)."
+    },
+    {
+      "file": "supplier_029.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.5)."
+    },
+    {
+      "file": "supplier_030.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 0.5)."
+    },
+    {
+      "file": "supplier_031.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.0)."
+    },
+    {
+      "file": "supplier_032.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 1.5)."
+    },
+    {
+      "file": "supplier_033.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.0)."
+    },
+    {
+      "file": "supplier_034.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 2.5)."
+    },
+    {
+      "file": "supplier_035.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 0.5)."
+    },
+    {
+      "file": "supplier_036.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 1.0)."
+    },
+    {
+      "file": "supplier_037.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.5)."
+    },
+    {
+      "file": "supplier_038.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 2.0)."
+    },
+    {
+      "file": "supplier_039.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.5)."
+    },
+    {
+      "file": "supplier_040.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 0.5)."
+    },
+    {
+      "file": "supplier_041.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.0)."
+    },
+    {
+      "file": "supplier_042.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.5)."
+    },
+    {
+      "file": "supplier_043.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.0)."
+    },
+    {
+      "file": "supplier_044.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.5)."
+    },
+    {
+      "file": "supplier_045.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 0.5)."
+    },
+    {
+      "file": "supplier_046.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 1.0)."
+    },
+    {
+      "file": "supplier_047.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 1.5)."
+    },
+    {
+      "file": "supplier_048.stl",
+      "valid": false,
+      "failure_mode": "open_mesh",
+      "notes": "Binary missing hypotenuse face (scale 2.0)."
+    },
+    {
+      "file": "supplier_049.stl",
+      "valid": true,
+      "failure_mode": null,
+      "notes": "Binary valid tetrahedron (scale 2.5)."
+    },
+    {
+      "file": "supplier_050.stl",
+      "valid": false,
+      "failure_mode": "inverted_normals",
+      "notes": "Binary inverted normals on faces 3-4 (scale 0.5)."
+    }
+  ]
+}

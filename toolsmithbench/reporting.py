@@ -24,33 +24,86 @@ _EP2_TASK = "stl_ep2_batch_processing"
 _EP3_TASK = "stl_ep3_binary_variant"
 
 
-def generate_reports(results: list[VerifierResult]) -> None:
-    """Write summary.csv, report.md, and reuse_analysis.md to results/."""
+def generate_reports(
+    results: list[VerifierResult],
+    *,
+    results_dir: Path | None = None,
+) -> None:
+    """Write summary.csv, report.md, and reuse_analysis.md.
+
+    Args:
+        results:     VerifierResults for a single model run, in episode order.
+        results_dir: Directory to write into.  Defaults to the top-level
+                     ``results/`` folder.  Pass ``results / model_label`` to
+                     write per-model reports into a subdirectory.
+    """
+    out = results_dir if results_dir is not None else _RESULTS_DIR
+    out.mkdir(parents=True, exist_ok=True)
+    _write_csv(results, out)
+    _write_report_md(results, out)
+    _write_reuse_analysis(results, out)
+
+
+def generate_model_comparison(
+    results_by_model: dict[str, list[VerifierResult]],
+) -> None:
+    """Write results/model_comparison.md comparing all models side by side.
+
+    Columns: model, task, passed, score, steps, tool_authored, tool_reused,
+    reuse_gain.
+    """
     _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    _write_csv(results)
-    _write_report_md(results)
-    _write_reuse_analysis(results)
+    path = _RESULTS_DIR / "model_comparison.md"
+
+    lines: list[str] = []
+    lines.append("# Model Comparison\n")
+    lines.append(
+        "| Model | Task | Passed | Score | Steps"
+        " | Authored | Reused | Reuse Gain |"
+    )
+    lines.append("|---|---|:---:|---:|---:|:---:|:---:|---:|")
+
+    for model_label, results in results_by_model.items():
+        for r in results:
+            gain = f"{r.reuse_gain:.1%}" if r.reuse_gain is not None else "—"
+            lines.append(
+                f"| {model_label} | {r.task_id} | {'✓' if r.passed else '✗'}"
+                f" | {r.score:.2f} | {r.steps_taken}"
+                f" | {_bool(r.tool_authored)} | {_bool(r.tool_reused)} | {gain} |"
+            )
+
+        # Per-model summary row.
+        if results:
+            pass_rate = sum(r.passed for r in results) / len(results)
+            avg_score = sum(r.score for r in results) / len(results)
+            lines.append(
+                f"| **{model_label} total** | **{len(results)} tasks**"
+                f" | **{pass_rate:.0%}** | **{avg_score:.2f}**"
+                " | | | | |"
+            )
+
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
 # summary.csv
 # ---------------------------------------------------------------------------
 
-def _write_csv(results: list[VerifierResult]) -> None:
-    path = _RESULTS_DIR / "summary.csv"
-    with path.open("w", newline="", encoding="utf-8") as fh:
+def _write_csv(results: list[VerifierResult], out: Path) -> None:
+    with (out / "summary.csv").open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=_CSV_FIELDS)
         writer.writeheader()
         for r in results:
             writer.writerow({
-                "task_id":        r.task_id,
-                "passed":         r.passed,
-                "score":          r.score,
-                "tool_authored":  r.tool_authored,
-                "tool_registered":r.tool_registered,
-                "tool_reused":    r.tool_reused,
-                "steps_taken":    r.steps_taken,
-                "reuse_gain":     r.reuse_gain if r.reuse_gain is not None else "",
+                "task_id":         r.task_id,
+                "passed":          r.passed,
+                "score":           r.score,
+                "tool_authored":   r.tool_authored,
+                "tool_registered": r.tool_registered,
+                "tool_reused":     r.tool_reused,
+                "steps_taken":     r.steps_taken,
+                "reuse_gain":      r.reuse_gain if r.reuse_gain is not None else "",
             })
 
 
@@ -58,7 +111,7 @@ def _write_csv(results: list[VerifierResult]) -> None:
 # report.md
 # ---------------------------------------------------------------------------
 
-def _write_report_md(results: list[VerifierResult]) -> None:
+def _write_report_md(results: list[VerifierResult], out: Path) -> None:
     lines: list[str] = []
 
     lines.append("# ToolsmithBench Results\n")
@@ -66,9 +119,7 @@ def _write_report_md(results: list[VerifierResult]) -> None:
         "| Task ID | Passed | Score | Authored | Registered | Reused"
         " | Steps | Reuse Gain |"
     )
-    lines.append(
-        "|---|:---:|---:|:---:|:---:|:---:|---:|---:|"
-    )
+    lines.append("|---|:---:|---:|:---:|:---:|:---:|---:|---:|")
 
     for r in results:
         gain = f"{r.reuse_gain:.1%}" if r.reuse_gain is not None else "—"
@@ -87,14 +138,14 @@ def _write_report_md(results: list[VerifierResult]) -> None:
         )
 
     lines.append("")
-    (_RESULTS_DIR / "report.md").write_text("\n".join(lines), encoding="utf-8")
+    (out / "report.md").write_text("\n".join(lines), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
 # reuse_analysis.md
 # ---------------------------------------------------------------------------
 
-def _write_reuse_analysis(results: list[VerifierResult]) -> None:
+def _write_reuse_analysis(results: list[VerifierResult], out: Path) -> None:
     by_task = {r.task_id: r for r in results}
     ep1 = by_task.get(_EP1_TASK)
     ep2 = by_task.get(_EP2_TASK)
@@ -105,13 +156,12 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
 
     if ep1 is None:
         lines.append(f"*Cannot compute reuse analysis — missing results for: {_EP1_TASK}*\n")
-        (_RESULTS_DIR / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
+        (out / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
         return
 
     # --- Step-count table ------------------------------------------------
     lines.append("## Step counts\n")
 
-    # Build header dynamically depending on which episodes are present.
     ep_cols = [(ep1, "Episode 1")]
     if ep2 is not None:
         ep_cols.append((ep2, "Episode 2"))
@@ -122,7 +172,6 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
     sep    = "|---|" + "".join(" ---: |" for _ in ep_cols)
     lines.append(header)
     lines.append(sep)
-
     lines.append("| Steps taken |" + "".join(f" {ep.steps_taken} |" for ep, _ in ep_cols))
     lines.append("| Score |"       + "".join(f" {ep.score:.2f} |"    for ep, _ in ep_cols))
     lines.append("| Tool reused |" + "".join(
@@ -137,7 +186,7 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
     if baseline == 0:
         lines.append("*Episode 1 step count is zero — cannot compute reduction.*")
     else:
-        for ep, label in ep_cols[1:]:   # skip ep1 itself
+        for ep, label in ep_cols[1:]:
             saved = baseline - ep.steps_taken
             if saved > 0:
                 pct = saved / baseline
@@ -147,12 +196,12 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
                 )
                 if ep.tool_reused:
                     lines.append(
-                        f" The agent reused a library tool, which accounts for the reduction."
+                        " The agent reused a library tool, which accounts for the reduction."
                     )
                 else:
                     lines.append(
-                        f" Note: no tool-library lookup recorded — reduction may not be "
-                        f"attributable to reuse."
+                        " Note: no tool-library lookup recorded — reduction may not be "
+                        "attributable to reuse."
                     )
             elif saved == 0:
                 lines.append(
@@ -187,7 +236,7 @@ def _write_reuse_analysis(results: list[VerifierResult]) -> None:
             )
         lines.append("")
 
-    (_RESULTS_DIR / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
+    (out / "reuse_analysis.md").write_text("\n".join(lines), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

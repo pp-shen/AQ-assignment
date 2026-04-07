@@ -1,0 +1,11 @@
+{
+  "description": "Ground truth for unit-conversion task (episode 4). Files are in inches; correct tool must handle unit awareness and normal validation.",
+  "fixtures_dir": "fixtures/units",
+  "verification_mode": "tool",
+  "normal_check_required": true,
+  "cases": [
+    {"file": "unit_001.stl", "valid": true,  "failure_mode": null,               "notes": "Valid tetrahedron (scale 2.0 in.). Correct normals."},
+    {"file": "unit_002.stl", "valid": false, "failure_mode": "inverted_normals", "notes": "Inverted normals on faces 3-4 (scale 1.0 in.)."},
+    {"file": "unit_003.stl", "valid": true,  "failure_mode": null,               "notes": "Valid tetrahedron (scale 3.0 in.). Correct normals."}
+  ]
+}
