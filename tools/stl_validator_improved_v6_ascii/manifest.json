@@ -1,0 +1,18 @@
+{
+  "tool_id": "stl_validator_improved_v6_ascii",
+  "created_at": "2026-04-07T01:36:51.546759+00:00",
+  "name": "Improved ASCII STL Validator v6",
+  "description": "Validates ASCII STL files for manufacturing suitability: checks manifold closure (open/non-manifold edges), inverted face normals via winding-order cross-product verification, and degenerate (zero-area) triangles. Fixes the hidden inverted-normal bug in stl_validator_provided.py. All 6 synthetic test cases pass (valid tetrahedron, inverted normals, open mesh, valid cube, degenerate triangle, partial inverted normal).",
+  "tags": [
+    "stl",
+    "validation",
+    "manufacturing",
+    "geometry",
+    "normals",
+    "manifold",
+    "winding-order",
+    "degenerate",
+    "ascii"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

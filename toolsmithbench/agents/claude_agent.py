@@ -14,6 +14,8 @@ _URL = "https://openrouter.ai/api/v1/chat/completions"
 _MODEL = "anthropic/claude-sonnet-4.6"
 
 _SYSTEM_PROMPT = """\
+CRITICAL: Your response must be a single JSON object and nothing else. Do not write any text before or after the JSON. Do not explain what you are doing. Just output the JSON.
+
 You are a tool-authoring agent running inside a benchmark harness for STL geometry validation.
 
 Your job:
@@ -159,23 +161,49 @@ def _format_observation(obs: dict) -> str:
 def _parse_response(raw: str) -> tuple[str, dict]:
     """Parse the model's JSON response into (action, args).
 
-    Scans for the first { ... } object in the text so leading prose and
-    markdown fences don't cause a parse failure.
+    Uses brace-counting to extract the first complete {...} block from the
+    response text, so leading prose, markdown fences, or trailing commentary
+    don't cause a parse failure.
     Falls back to ("done", {}) if no valid JSON object is found.
     """
     start = raw.find("{")
-    end = raw.rfind("}")
-    if start == -1 or end == -1 or end < start:
+    if start == -1:
         logger.warning("No JSON object found in model response:\n%s", raw)
         return ("done", {})
 
-    try:
-        data = json.loads(raw[start : end + 1])
-        action = str(data.get("action", "done"))
-        args = data.get("args", {})
-        if not isinstance(args, dict):
-            args = {}
-        return action, args
-    except json.JSONDecodeError as exc:
-        logger.warning("Failed to parse model response as JSON: %s\nFull raw response:\n%s", exc, raw)
-        return ("done", {})
+    depth = 0
+    in_string = False
+    escape_next = False
+    for i, ch in enumerate(raw[start:], start):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = raw[start : i + 1]
+                try:
+                    data = json.loads(candidate)
+                    action = str(data.get("action", "done"))
+                    args = data.get("args", {})
+                    if not isinstance(args, dict):
+                        args = {}
+                    return action, args
+                except json.JSONDecodeError as exc:
+                    logger.warning(
+                        "Extracted JSON block failed to parse: %s\nBlock: %s", exc, candidate
+                    )
+                    return ("done", {})
+
+    logger.warning("Unmatched braces in model response:\n%s", raw)
+    return ("done", {})
