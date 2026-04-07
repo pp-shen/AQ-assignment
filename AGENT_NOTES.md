@@ -110,6 +110,12 @@ infrastructure.
   a tool library, so I can't actually attribute the step reduction in ep2/3
   to reuse vs. just task familiarity from the conversation history (which
   is reset between episodes, but still — I should measure this).
+- **Agents can read the provided tool's source code.** Because
+  `stl_validator_provided.py` is a readable Python file in the working
+  directory, agents can audit its logic directly rather than inferring its
+  failure mode from observed behavior. This shortcuts the intended "detect
+  from behavior" signal. A stricter benchmark would provide the tool as a
+  compiled binary or API endpoint.
 
 ## What I would do next
 
