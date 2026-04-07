@@ -2,14 +2,21 @@
 """run_benchmark.py — reproduce ToolsmithBench results for the STL sequence.
 
 Usage:
-    python run_benchmark.py              # full sweep: all 6 episodes × all models
-    python run_benchmark.py --test       # quick check: ep4/5/6, first model only
-    python run_benchmark.py --no-library # control comparison (lib ON vs OFF)
-                                         # claude-sonnet-4.6 × ep1/ep2/ep3
+    python run_benchmark.py                          # full sweep: 6 eps × all models
+    python run_benchmark.py --test                   # quick check: ep4/5/6, model 1
+    python run_benchmark.py --no-library             # lib ON vs OFF control
+    python run_benchmark.py --clean-library          # wipe claude library first
+    python run_benchmark.py --episodes ep1,ep2,ep3   # only these episode IDs
+                                                     # ("ep1" or "stl_ep1_broken_validator")
+
+Flags can be combined.  Example:
+    python run_benchmark.py --clean-library --episodes ep1,ep2,ep3 --no-library
 """
 from __future__ import annotations
 
+import argparse
 import logging
+import shutil
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -43,23 +50,85 @@ _MODELS: list[tuple[str, str]] = [
 ]
 
 # Full episode list: (task_id, extra kwargs for run_episode)
+# Retry-on-failure is automatic for every episode now — no per-task flag needed.
 _ALL_EPISODES: list[tuple[str, dict]] = [
     ("stl_ep1_broken_validator", {}),
-    ("stl_ep2_batch_processing", {"retry_if_trivial": True}),
+    ("stl_ep2_batch_processing", {}),
     ("stl_ep3_binary_variant",   {}),
     ("stl_ep4_unit_conversion",  {}),
-    ("stl_ep5_large_batch",      {"retry_if_trivial": True}),
+    ("stl_ep5_large_batch",      {}),
     ("stl_ep6_repair",           {}),
 ]
 
 # Just the three new tasks — used by --test mode
 _NEW_EPISODES: list[tuple[str, dict]] = [
     ("stl_ep4_unit_conversion",  {}),
-    ("stl_ep5_large_batch",      {"retry_if_trivial": True}),
+    ("stl_ep5_large_batch",      {}),
     ("stl_ep6_repair",           {}),
 ]
 
 _TOOLS_BASE = Path(__file__).parent / "tools"
+
+# Map of every known episode id, plus short aliases (ep1 → stl_ep1_broken_validator).
+_EPISODE_BY_ID: dict[str, tuple[str, dict]] = dict(_ALL_EPISODES)
+_EPISODE_ALIASES: dict[str, str] = {
+    f"ep{i + 1}": task_id
+    for i, (task_id, _) in enumerate(_ALL_EPISODES)
+}
+
+
+def _resolve_episode_filter(spec: str) -> list[tuple[str, dict]]:
+    """Parse --episodes value into a [(task_id, kwargs), ...] list.
+
+    Accepts full task IDs (stl_ep1_broken_validator) or short aliases (ep1).
+    Preserves the order the user typed them in.
+    """
+    selected: list[tuple[str, dict]] = []
+    for raw in spec.split(","):
+        name = raw.strip()
+        if not name:
+            continue
+        task_id = _EPISODE_ALIASES.get(name, name)
+        if task_id not in _EPISODE_BY_ID:
+            valid = ", ".join(sorted(set(_EPISODE_BY_ID) | set(_EPISODE_ALIASES)))
+            raise SystemExit(f"unknown episode {name!r}. Valid: {valid}")
+        selected.append((task_id, _EPISODE_BY_ID[task_id]))
+    if not selected:
+        raise SystemExit("--episodes was empty")
+    return selected
+
+
+def _clean_library(model_label: str = "claude-sonnet-4.6") -> None:
+    """Delete tools/<model_label>/ so the next run starts with an empty library.
+
+    Also clears the -lib and -nolib variants used by --no-library.
+
+    Files that can't be deleted (typically Windows file locks or read-only
+    bits from a previous interrupted run) are skipped with a warning rather
+    than raising — the next run will overwrite them anyway.
+    """
+    def _on_rm_error(func, path, exc_info):
+        # Try to clear a read-only bit and retry once; otherwise skip.
+        try:
+            import os, stat
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("could not delete %s: %s — skipping", path, exc)
+
+    for suffix in ("", "-lib", "-nolib"):
+        target = _TOOLS_BASE / f"{model_label}{suffix}"
+        if not target.exists():
+            logger.info("nothing to remove at %s", target)
+            continue
+
+        # Python 3.12+ deprecated onerror in favour of onexc; pass whichever the
+        # installed version supports so we work on 3.11 and 3.12+.
+        try:
+            shutil.rmtree(target, onexc=_on_rm_error)  # type: ignore[call-arg]
+        except TypeError:
+            shutil.rmtree(target, onerror=_on_rm_error)
+        logger.info("removed %s", target)
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +192,56 @@ def _trace_flags(trace: list[dict]) -> dict:
     return dict(tool_authored=tool_authored, tool_registered=tool_registered, tool_reused=tool_reused)
 
 
-def _is_trivial_run(trace: list[dict], working_dir: Path) -> bool:
-    return len(trace) < 3 and not (working_dir / "validation_report.json").exists()
+def _is_failed_run(
+    trace: list[dict], working_dir: Path, *, library_enabled: bool
+) -> tuple[bool, str]:
+    """Decide whether a run produced nothing useful and should be retried.
+
+    Returns ``(should_retry, reason)``.  A run is considered failed when the
+    agent ended via ``done`` without leaving behind any of the artefacts a
+    verifier needs:
+
+    * trivially short trace (≤2 steps) with no validation report — usually
+      a parse failure on the very first response, and
+    * any episode that called ``done`` without registering a tool, writing
+      a ``.py`` file, or producing ``validation_report.json`` — covers a
+      mid-run parse failure where the fallback ``("done", {})`` aborts the
+      loop after the agent already did some work.
+
+    The library-disabled mode swaps the "registered" check for "any .py
+    authored", since registration is impossible by design in that mode.
+    """
+    has_report = (working_dir / "validation_report.json").exists()
+
+    # Case 1: trivially short run (existing behaviour).
+    if len(trace) < 3 and not has_report:
+        return True, f"trivial run ({len(trace)} step(s))"
+
+    # The episode ended via "done" if the last event's action is "done".
+    if not trace or trace[-1].get("action") != "done":
+        return False, ""
+
+    # Case 2: ended in done without producing anything the verifier can score.
+    tool_registered = any(
+        e["action"] == "tool_library_register" and e.get("result") == "ok"
+        for e in trace
+    )
+    py_authored = any(
+        e["action"] == "write_file"
+        and e.get("result") == "ok"
+        and e.get("args", {}).get("path", "").endswith(".py")
+        and e.get("args", {}).get("path") != "stl_validator_provided.py"
+        for e in trace
+    )
+
+    if has_report:
+        return False, ""
+    if library_enabled and tool_registered:
+        return False, ""
+    if not library_enabled and py_authored:
+        return False, ""
+
+    return True, "agent called done without registering a tool or writing a report"
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +254,6 @@ def run_episode(
     model: str,
     tools_dir: Path,
     library_enabled: bool = True,
-    retry_if_trivial: bool = False,
 ) -> tuple[VerifierResult, list[dict]]:
     task = get_task(task_id)
     if not library_enabled:
@@ -152,11 +268,10 @@ def run_episode(
     trace, working_dir = runner.run(task, agent, tools_dir=tools_dir)
     logger.info("working_dir: %s", working_dir)
 
-    if retry_if_trivial and _is_trivial_run(trace, working_dir):
-        logger.warning(
-            "%s finished in %d step(s) with no report — retrying once", task_id, len(trace)
-        )
-        _banner(f"Episode: {label}  (retry)")
+    failed, reason = _is_failed_run(trace, working_dir, library_enabled=library_enabled)
+    if failed:
+        logger.warning("%s: %s — retrying once with a fresh agent", task_id, reason)
+        _banner(f"Episode: {label}  (retry — {reason})")
         agent = ClaudeAgent(model=model)
         trace, working_dir = runner.run(task, agent, tools_dir=tools_dir)
         logger.info("retry working_dir: %s", working_dir)
@@ -295,17 +410,17 @@ def _print_library_comparison(
 # Entry point
 # ---------------------------------------------------------------------------
 
-_NO_LIBRARY_EPISODES: list[tuple[str, dict]] = [
+_NO_LIBRARY_DEFAULT_EPISODES: list[tuple[str, dict]] = [
     ("stl_ep1_broken_validator", {}),
-    ("stl_ep2_batch_processing", {"retry_if_trivial": True}),
+    ("stl_ep2_batch_processing", {}),
     ("stl_ep3_binary_variant",   {}),
 ]
 
 _NO_LIBRARY_MODEL = ("anthropic/claude-sonnet-4.6", "claude-sonnet-4.6")
 
 
-def _run_no_library_comparison() -> None:
-    """Run claude-sonnet-4.6 on ep1/2/3 twice — once with library, once without.
+def _run_no_library_comparison(episodes: list[tuple[str, dict]]) -> None:
+    """Run claude-sonnet-4.6 on *episodes* twice — once with library, once without.
 
     Both runs use isolated tools/ subdirectories so they cannot influence
     each other.  Prints a side-by-side comparison and the standard per-run
@@ -315,14 +430,14 @@ def _run_no_library_comparison() -> None:
 
     _banner("CONTROL — library ON")
     with_lib = run_model(
-        model_id, model_label, _NO_LIBRARY_EPISODES,
+        model_id, model_label, episodes,
         library_enabled=True,
         tools_dir_label=f"{model_label}-lib",
     )
 
     _banner("CONTROL — library OFF")
     without_lib = run_model(
-        model_id, model_label, _NO_LIBRARY_EPISODES,
+        model_id, model_label, episodes,
         library_enabled=False,
         tools_dir_label=f"{model_label}-nolib",
     )
@@ -333,24 +448,48 @@ def _run_no_library_comparison() -> None:
     print("\nReports written to results/")
 
 
-def main() -> None:
-    if "--no-library" in sys.argv:
-        _run_no_library_comparison()
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="ToolsmithBench runner")
+    parser.add_argument("--test", action="store_true",
+                        help="quick check: ep4/5/6, first model only")
+    parser.add_argument("--no-library", action="store_true",
+                        help="control comparison — library ON vs library OFF")
+    parser.add_argument("--clean-library", action="store_true",
+                        help="wipe tools/claude-sonnet-4.6/ (and -lib/-nolib variants) before running")
+    parser.add_argument("--episodes",
+                        help="comma-separated episode IDs to run "
+                             "(e.g. 'ep1,ep2,ep3' or full task IDs)")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.clean_library:
+        _banner("CLEANING LIBRARY")
+        _clean_library()
+
+    episode_override = _resolve_episode_filter(args.episodes) if args.episodes else None
+
+    if args.no_library:
+        episodes = episode_override or _NO_LIBRARY_DEFAULT_EPISODES
+        _run_no_library_comparison(episodes)
         return
 
-    test_mode = "--test" in sys.argv
-    episodes = _NEW_EPISODES if test_mode else _ALL_EPISODES
-    models   = _MODELS[:1]  if test_mode else _MODELS
-
-    if test_mode:
-        _banner("TEST MODE — ep4/5/6 only, first model only")
+    if args.test:
+        episodes = episode_override or _NEW_EPISODES
+        models   = _MODELS[:1]
+        _banner("TEST MODE — first model only")
+    else:
+        episodes = episode_override or _ALL_EPISODES
+        models   = _MODELS
 
     results_by_model: dict[str, list[VerifierResult]] = {}
     for model_id, model_label in models:
         _banner(f"MODEL: {model_label}")
         results_by_model[model_label] = run_model(model_id, model_label, episodes)
 
-    if not test_mode:
+    if not args.test and len(models) > 1:
         generate_model_comparison(results_by_model)
 
     for model_label, results in results_by_model.items():

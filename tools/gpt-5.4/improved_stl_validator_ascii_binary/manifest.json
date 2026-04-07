@@ -1,0 +1,11 @@
+{
+  "tool_id": "improved_stl_validator_ascii_binary",
+  "created_at": "2026-04-07T20:11:17.656967+00:00",
+  "name": "Improved STL Validator ASCII/Binary",
+  "description": "Validates ASCII or binary STL meshes for closure, non-manifold edges, degeneracy, orientation consistency, normals, area, and signed volume.",
+  "tags": [
+    "stl",
+    "validation"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

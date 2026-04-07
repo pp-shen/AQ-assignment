@@ -100,8 +100,8 @@ def parse_stl(path: str) -> dict:
         issues.append(f"Mesh has {open_edges} open edge(s) — not a closed solid")
 
     # Normal consistency check: compare each declared normal against the normal
-    # implied by vertex winding order.  Allow for floating-point imprecision in
-    # exported files — only flag normals that are near-perfectly inverted.
+    # implied by vertex winding order.
+    # NOTE: threshold is set to -0.99 but should be < 0 for correct normal validation
     for declared_normal, verts in triangles:
         edge1 = _sub(verts[1], verts[0])
         edge2 = _sub(verts[2], verts[0])

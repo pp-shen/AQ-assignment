@@ -65,6 +65,7 @@ class Runner:
 
         library = ToolLibrary(tools_dir) if tools_dir is not None else ToolLibrary()
         library_enabled = task.tool_library_enabled
+        max_steps = task.max_steps if task.max_steps is not None else _MAX_STEPS
         trace: list[dict] = []
 
         logger.info("run START  task_id=%r  working_dir=%s", task.task_id, working_dir)
@@ -77,7 +78,7 @@ class Runner:
             "last_action_result": None,
         }
 
-        for step in range(1, _MAX_STEPS + 1):
+        for step in range(1, max_steps + 1):
             action, args = agent.step(observation)
             timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -105,7 +106,7 @@ class Runner:
                 "last_action_result": result,
             }
         else:
-            logger.warning("run STOPPED — reached max steps (%d)", _MAX_STEPS)
+            logger.warning("run STOPPED — reached max steps (%d)", max_steps)
 
         _write_trace(trace, task.task_id)
         logger.info("run END  task_id=%r  steps=%d", task.task_id, len(trace))

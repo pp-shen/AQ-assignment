@@ -26,6 +26,7 @@ spec = TaskSpec(
     },
     episode_sequence="stl_sequence",
     episode_number=1,
+    max_steps=25,
 )
 
 register_task(spec)

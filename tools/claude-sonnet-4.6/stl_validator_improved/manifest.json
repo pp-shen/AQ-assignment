@@ -1,14 +1,15 @@
 {
   "tool_id": "stl_validator_improved",
-  "created_at": "2026-04-07T01:55:45.350839+00:00",
+  "created_at": "2026-04-07T21:34:01.201892+00:00",
   "name": "Improved STL Validator",
-  "description": "Validates ASCII STL files for manifold integrity, open edges, degenerate triangles, duplicate faces, and \u2014 unlike the provided validator \u2014 correctly checks that declared face normals are consistent with vertex winding order.",
+  "description": "Validates ASCII and binary STL files for manufacturing suitability, checking manifold integrity, face normals, degenerate triangles, duplicate faces, and non-manifold edges. Fixes bugs in the provided validator (binary STL support, correct normal threshold, degenerate/non-manifold detection).",
   "tags": [
     "stl",
     "validation",
-    "normals",
-    "manifold",
-    "manufacturing"
+    "manufacturing",
+    "geometry",
+    "3d",
+    "mesh"
   ],
   "authored_in_task": "stl_ep1_broken_validator"
 }

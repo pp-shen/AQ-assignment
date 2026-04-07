@@ -1,0 +1,17 @@
+{
+  "tool_id": "stl_validator_binary_ascii",
+  "created_at": "2026-04-07T21:37:12.604501+00:00",
+  "name": "STL Validator (Binary + ASCII)",
+  "description": "Validates ASCII and binary STL files for manufacturing suitability: checks manifold integrity, inverted normals (correct threshold, not -0.99), degenerate triangles, duplicate faces, open/non-manifold edges, and minimum face count. Accepts a single STL file path as CLI arg and prints JSON {valid, issues, format, triangle_count, surface_area}.",
+  "tags": [
+    "stl",
+    "validation",
+    "manufacturing",
+    "geometry",
+    "3d",
+    "mesh",
+    "binary",
+    "ascii"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

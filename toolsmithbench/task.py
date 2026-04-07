@@ -14,6 +14,7 @@ class TaskSpec:
     episode_sequence: str | None = None   # e.g. "stl_sequence" — links related episodes
     episode_number: int | None = None     # 1, 2, 3 within a sequence
     fixtures_dir: str | None = None       # pre-populate working dir with *.stl from here
+    max_steps: int | None = None          # override the runner's default step limit
 
 
 # Registry maps task_id -> TaskSpec

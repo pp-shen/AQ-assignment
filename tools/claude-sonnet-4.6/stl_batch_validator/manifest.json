@@ -1,0 +1,16 @@
+{
+  "tool_id": "stl_batch_validator",
+  "created_at": "2026-04-07T21:35:29.793966+00:00",
+  "name": "STL Batch Validator",
+  "description": "Validates ASCII and binary STL files for manufacturing: checks manifold integrity, inverted normals (fixed threshold bug), degenerate triangles, open/non-manifold edges. Supports batch processing.",
+  "tags": [
+    "stl",
+    "validation",
+    "manufacturing",
+    "geometry",
+    "3d",
+    "mesh",
+    "batch"
+  ],
+  "authored_in_task": "stl_supplier_batch_validation"
+}
