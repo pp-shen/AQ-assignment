@@ -1,0 +1,254 @@
+{
+  "results": [
+    {
+      "file": "supplier_001.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_001.stl'"
+    },
+    {
+      "file": "supplier_002.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_002.stl'"
+    },
+    {
+      "file": "supplier_003.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_003.stl'"
+    },
+    {
+      "file": "supplier_004.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_004.stl'"
+    },
+    {
+      "file": "supplier_005.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_005.stl'"
+    },
+    {
+      "file": "supplier_006.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_006.stl'"
+    },
+    {
+      "file": "supplier_007.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_007.stl'"
+    },
+    {
+      "file": "supplier_008.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_008.stl'"
+    },
+    {
+      "file": "supplier_009.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_009.stl'"
+    },
+    {
+      "file": "supplier_010.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_010.stl'"
+    },
+    {
+      "file": "supplier_011.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_011.stl'"
+    },
+    {
+      "file": "supplier_012.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_012.stl'"
+    },
+    {
+      "file": "supplier_013.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_013.stl'"
+    },
+    {
+      "file": "supplier_014.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_014.stl'"
+    },
+    {
+      "file": "supplier_015.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_015.stl'"
+    },
+    {
+      "file": "supplier_016.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_016.stl'"
+    },
+    {
+      "file": "supplier_017.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_017.stl'"
+    },
+    {
+      "file": "supplier_018.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_018.stl'"
+    },
+    {
+      "file": "supplier_019.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_019.stl'"
+    },
+    {
+      "file": "supplier_020.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_020.stl'"
+    },
+    {
+      "file": "supplier_021.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_021.stl'"
+    },
+    {
+      "file": "supplier_022.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_022.stl'"
+    },
+    {
+      "file": "supplier_023.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_023.stl'"
+    },
+    {
+      "file": "supplier_024.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_024.stl'"
+    },
+    {
+      "file": "supplier_025.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_025.stl'"
+    },
+    {
+      "file": "supplier_026.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_026.stl'"
+    },
+    {
+      "file": "supplier_027.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_027.stl'"
+    },
+    {
+      "file": "supplier_028.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_028.stl'"
+    },
+    {
+      "file": "supplier_029.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_029.stl'"
+    },
+    {
+      "file": "supplier_030.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_030.stl'"
+    },
+    {
+      "file": "supplier_031.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_031.stl'"
+    },
+    {
+      "file": "supplier_032.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_032.stl'"
+    },
+    {
+      "file": "supplier_033.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_033.stl'"
+    },
+    {
+      "file": "supplier_034.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_034.stl'"
+    },
+    {
+      "file": "supplier_035.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_035.stl'"
+    },
+    {
+      "file": "supplier_036.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_036.stl'"
+    },
+    {
+      "file": "supplier_037.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_037.stl'"
+    },
+    {
+      "file": "supplier_038.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_038.stl'"
+    },
+    {
+      "file": "supplier_039.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_039.stl'"
+    },
+    {
+      "file": "supplier_040.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_040.stl'"
+    },
+    {
+      "file": "supplier_041.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_041.stl'"
+    },
+    {
+      "file": "supplier_042.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_042.stl'"
+    },
+    {
+      "file": "supplier_043.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_043.stl'"
+    },
+    {
+      "file": "supplier_044.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_044.stl'"
+    },
+    {
+      "file": "supplier_045.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_045.stl'"
+    },
+    {
+      "file": "supplier_046.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_046.stl'"
+    },
+    {
+      "file": "supplier_047.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_047.stl'"
+    },
+    {
+      "file": "supplier_048.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_048.stl'"
+    },
+    {
+      "file": "supplier_049.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_049.stl'"
+    },
+    {
+      "file": "supplier_050.stl",
+      "valid": false,
+      "reason": "exception:[Errno 2] No such file or directory: 'supplier_050.stl'"
+    }
+  ]
+}

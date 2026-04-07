@@ -1,0 +1,11 @@
+{
+  "tool_id": "batch_binary_ascii_stl_manufacturing_validator",
+  "created_at": "2026-04-07T02:39:47.177195+00:00",
+  "name": "Batch Binary/ASCII STL Manufacturing Validator",
+  "description": "Validates all STL files in a directory, handling ASCII and binary STL and reporting open edges, non-manifold edges, degenerate triangles, inverted normals, and manufacturing suitability.",
+  "tags": [
+    "stl",
+    "validation"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}

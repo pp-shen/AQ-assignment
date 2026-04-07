@@ -13,14 +13,14 @@ solid bad_normals_tetrahedron
       vertex 0.000000 0.000000 1.000000
     endloop
   endfacet
-  facet normal 1.000000 0.000000 0.000000
+  facet normal 0.500000 0.500000 0.707100
     outer loop
       vertex 0.000000 0.000000 0.000000
       vertex 0.000000 0.000000 1.000000
       vertex 0.000000 1.000000 0.000000
     endloop
   endfacet
-  facet normal -0.577350 -0.577350 -0.577350
+  facet normal -0.577350 -0.577350 0.577350
     outer loop
       vertex 1.000000 0.000000 0.000000
       vertex 0.000000 1.000000 0.000000
