@@ -1,0 +1,20 @@
+{
+  "tool_id": "stl_validator_inches_cli_v1",
+  "created_at": "2026-04-07T02:37:02.447643+00:00",
+  "name": "STL Validator CLI (inches \u2192 mm\u00b2, ASCII + Binary)",
+  "description": "CLI tool accepting a single STL file path (coordinates in inches) and printing JSON {valid, surface_area_mm2, issues}. Handles ASCII and binary STL. Checks manifold integrity, degenerate triangles, duplicate faces, non-manifold edges, and inverted normals. Converts surface area from in\u00b2 to mm\u00b2 (\u00d7645.16).",
+  "tags": [
+    "stl",
+    "validation",
+    "cli",
+    "inches",
+    "mm2",
+    "surface-area",
+    "unit-conversion",
+    "ascii",
+    "binary",
+    "normals",
+    "manifold"
+  ],
+  "authored_in_task": "stl_unit_validation"
+}

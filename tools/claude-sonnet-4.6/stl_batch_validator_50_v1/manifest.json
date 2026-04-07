@@ -1,0 +1,20 @@
+{
+  "tool_id": "stl_batch_validator_50_v1",
+  "created_at": "2026-04-07T02:38:16.776763+00:00",
+  "name": "STL Batch Validator (50-file supplier batch)",
+  "description": "Validates a batch of up to 50 ASCII/binary STL files for manufacturing suitability: checks manifold integrity (open/non-manifold edges), degenerate triangles, duplicate faces, inverted normals (declared vs winding order, threshold -0.5), and binary file-size consistency. Writes validation_report.json.",
+  "tags": [
+    "stl",
+    "validation",
+    "batch",
+    "normals",
+    "manifold",
+    "manufacturing",
+    "ascii",
+    "binary",
+    "degenerate",
+    "duplicate",
+    "non-manifold"
+  ],
+  "authored_in_task": "stl_ep4_50_batch_validation"
+}

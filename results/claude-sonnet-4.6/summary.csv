@@ -1,7 +1,7 @@
 task_id,passed,score,tool_authored,tool_registered,tool_reused,steps_taken,reuse_gain
-stl_ep1_broken_validator,True,1.0,True,True,True,13,
-stl_ep2_batch_processing,True,1.0,True,True,True,8,0.38461538461538464
-stl_ep3_binary_variant,True,1.0,True,True,True,7,0.46153846153846156
-stl_ep4_unit_conversion,True,1.0,False,False,True,6,0.5384615384615384
-stl_ep5_large_batch,True,1.0,True,False,True,6,0.5384615384615384
-stl_ep6_repair,False,0.0,True,False,True,9,0.3076923076923077
+stl_ep1_broken_validator,True,1.0,True,True,True,20,
+stl_ep2_batch_processing,True,1.0,True,True,True,8,0.6
+stl_ep3_binary_variant,False,0.0,False,False,True,3,0.85
+stl_ep4_unit_conversion,True,1.0,True,True,True,10,0.5
+stl_ep5_large_batch,True,1.0,True,True,True,7,0.65
+stl_ep6_repair,False,0.0,True,False,True,8,0.6

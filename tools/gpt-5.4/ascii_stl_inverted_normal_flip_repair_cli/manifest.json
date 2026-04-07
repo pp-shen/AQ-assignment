@@ -1,0 +1,11 @@
+{
+  "tool_id": "ascii_stl_inverted_normal_flip_repair_cli",
+  "created_at": "2026-04-07T02:45:10.706395+00:00",
+  "name": "ASCII STL Inverted Normal Flip Repair CLI",
+  "description": "Repairs inverted declared facet normals in an ASCII STL in place by flipping normals to match winding, then validates and prints JSON.",
+  "tags": [
+    "stl",
+    "validation"
+  ],
+  "authored_in_task": "stl_ep1_broken_validator"
+}
