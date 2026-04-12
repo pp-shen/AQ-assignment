@@ -258,7 +258,12 @@ def run_episode(
     task = get_task(task_id)
     if not library_enabled:
         # TaskSpec is frozen at import time; create a per-run override.
-        task = replace(task, tool_library_enabled=False)
+        # ep1 needs extra headroom in no-library mode since the agent has to
+        # re-derive everything from scratch without the cross-episode tool cache.
+        overrides: dict = {"tool_library_enabled": False}
+        if task_id == "stl_ep1_broken_validator":
+            overrides["max_steps"] = 30
+        task = replace(task, **overrides)
 
     agent = ClaudeAgent(model=model)
     runner = Runner()

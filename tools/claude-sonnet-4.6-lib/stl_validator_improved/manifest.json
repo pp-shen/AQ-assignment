@@ -1,6 +1,6 @@
 {
   "tool_id": "stl_validator_improved",
-  "created_at": "2026-04-07T21:49:34.012930+00:00",
+  "created_at": "2026-04-07T22:32:22.207114+00:00",
   "name": "Improved STL Validator",
   "description": "Validates ASCII and binary STL files for manufacturing suitability: checks manifold integrity, normal consistency (fixed threshold bug from provided validator), degenerate triangles, non-manifold edges, and computes surface area, volume, and bounding box.",
   "tags": [

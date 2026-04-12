@@ -4,18 +4,18 @@
 
 | | Episode 1 | Episode 2 | Episode 3 |
 |---| ---: | ---: | ---: |
-| Steps taken | 23 | 13 | 7 |
+| Steps taken | 21 | 11 | 16 |
 | Score | 0.00 | 1.00 | 0.00 |
 | Tool reused | — | ✓ | ✓ |
 
 ## Amortization vs Episode 1 baseline
 
-**Episode 2** used **13** steps vs episode 1's **23**, saving **10** steps (**43.5%** reduction).
+**Episode 2** used **11** steps vs episode 1's **21**, saving **10** steps (**47.6%** reduction).
  The agent reused a library tool, which accounts for the reduction.
 
-**Episode 3** used **7** steps vs episode 1's **23**, saving **16** steps (**69.6%** reduction).
+**Episode 3** used **16** steps vs episode 1's **21**, saving **5** steps (**23.8%** reduction).
  The agent reused a library tool, which accounts for the reduction.
 
 ## Episode 3 vs Episode 2
 
-Episode 3 used **7** steps vs episode 2's **13**, saving **6** steps (**46.2%** reduction).
+Episode 3 used **16** steps — **5** more than episode 2's **11**.
